@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PENUMBRIS | Noxis + Obscura UI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@300;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-black: #050505;
+            --panel-bg: #0d0d0d;
+            --neon-red: #ff003c;
+            --neon-cyan: #00f3ff;
+            --neon-yellow: #f3ff00;
+            --text-gray: #a0a0a0;
+            --border-glow: 0 0 10px rgba(255, 0, 60, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-black);
+            color: white;
+            font-family: 'JetBrains+Mono', monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            grid-template-rows: 60px 1fr 180px;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        /* Scanline Effect */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 100;
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+        }
+
+        /* --- Header --- */
+        header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--neon-cyan);
+            padding: 0 20px;
+            background: var(--panel-bg);
+            box-shadow: var(--border-glow);
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            letter-spacing: 4px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .system-status { font-size: 0.8rem; color: var(--neon-yellow); }
+
+        /* --- Sidebar (Modules) --- */
+        aside {
+            grid-row: 2 / 4;
+            background: var(--panel-bg);
+            border: 1px solid #333;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .module-card {
+            border-left: 3px solid var(--neon-cyan);
+            padding: 10px;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .module-card h3 { font-size: 0.9rem; margin-bottom: 5px; color: var(--neon-cyan); }
+        .module-card p { font-size: 0.7rem; color: var(--text-gray); }
+
+        /* --- Main Feed --- */
+        .main-viewport {
+            position: relative;
+            background: #000;
+            border: 1px solid #444;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .video-placeholder {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.6;
+            filter: grayscale(1) contrast(1.2) brightness(0.5);
+        }
+
+        /* Bounding Box Simulation */
+        .overlay-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+        }
+
+        .bbox {
+            position: absolute;
+            border: 2px solid var(--neon-red);
+            box-shadow: 0 0 8px var(--neon-red);
+            transition: all 0.3s ease;
+        }
+
+        .bbox::before {
+            content: attr(data-label);
+            position: absolute;
+            top: -20px; left: -2px;
+            background: var(--neon-red);
+            color: black;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 0 5px;
+            white-space: nowrap;
+        }
+
+        /* --- Forensic View (Slider) --- */
+        .forensic-panel {
+            grid-row: 3;
+            grid-column: 2;
+            background: var(--panel-bg);
+            border: 1px solid #333;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .slider-container {
+            position: relative;
+            width: 90%;
+            height: 140px;
+            border: 1px solid #444;
+        }
+
+        .img-comp {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .img-before { 
+            background-image: url('https://images.unsplash.com/photo-1500673922987-e212871fec22?auto=format&fit=crop&q=80&w=1000'); 
+            filter: brightness(0.1) grayscale(1);
+        }
+
+        .img-after { 
+            background-image: url('https://images.unsplash.com/photo-1500673922987-e212871fec22?auto=format&fit=crop&q=80&w=1000'); 
+            filter: brightness(1.2) contrast(1.2);
+            width: 50%;
+            border-right: 2px solid var(--neon-cyan);
+        }
+
+        .slider-label {
+            position: absolute;
+            bottom: 5px;
+            font-size: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 2px 10px;
+        }
+
+        /* --- Alerts Panel --- */
+        .alerts-panel {
+            grid-row: 2 / 4;
+            background: var(--panel-bg);
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .alert-header {
+            padding: 15px;
+            border-bottom: 1px solid #333;
+            font-family: 'Orbitron';
+            color: var(--neon-red);
+            font-size: 0.8rem;
+        }
+
+        #alert-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .alert-item {
+            padding: 10px;
+            border-bottom: 1px solid #222;
+            font-size: 0.75rem;
+            animation: slideIn 0.3s ease-out;
+            margin-bottom: 5px;
+        }
+
+        .alert-item.critical { border-left: 3px solid var(--neon-red); background: rgba(255,0,60,0.05); }
+        .alert-item.warning { border-left: 3px solid var(--neon-yellow); }
+
+        @keyframes slideIn {
+            from { transform: translateX(20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .threat-level {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">PENUMBRIS</div>
+        <div class="system-status">
+            STATUS: <span style="color: #00ff00;">SYSTEM ACTIVE</span> | NOXIS: RUNNING | OBSCURA: OPTIMIZED
+        </div>
+        <div style="font-size: 0.8rem;">LATENCY: 14ms | GPU: 42%</div>
+    </header>
+
+    <aside>
+        <div class="module-card">
+            <h3>NOXIS ENGINE</h3>
+            <p>Real-time threat detection active. YOLOv9 neural weights loaded.</p>
+        </div>
+        <div class="module-card">
+            <h3>OBSCURA-X</h3>
+            <p>Low-light reconstruction enabled. Zero-DCE enhancement pipeline: ON.</p>
+        </div>
+        <div class="module-card">
+            <h3>DATASET</h3>
+            <p>Source: EX-DARK + LLVIP Fusion Dataset.</p>
+        </div>
+        <div style="margin-top: auto; font-size: 0.6rem; color: #555;">
+            &copy; 2024 PENUMBRIS AI SYSTEMS<br>
+            SECURE ACCESS ONLY
+        </div>
+    </aside>
+
+    <section class="main-viewport">
+        <!-- Using an atmospheric dark image as a video placeholder -->
+        <img class="video-placeholder" src="https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&q=80&w=1200" alt="Live Feed">
+        
+        <div class="overlay-layer" id="bbox-container">
+            <!-- Bounding boxes will be generated here by JS -->
+        </div>
+
+        <div style="position: absolute; top: 10px; left: 10px; color: var(--neon-red); font-size: 12px; font-weight: bold;">
+            ● LIVE FEED // CAM_04_NORTH
+        </div>
+    </section>
+
+    <section class="forensic-panel">
+        <div style="position:absolute; top: 5px; left: 20px; font-size: 10px; color: var(--neon-cyan);">OBSCURA FORENSIC RECONSTRUCTION (BEFORE/AFTER)</div>
+        <div class="slider-container" id="slider">
+            <div class="img-comp img-before"></div>
+            <div class="img-comp img-after" id="after-img"></div>
+            <span class="slider-label" style="left: 10px;">RAW FOOTAGE</span>
+            <span class="slider-label" style="right: 10px;">ENHANCED</span>
+        </div>
+    </section>
+
+    <section class="alerts-panel">
+        <div class="alert-header">THREAT DETECTION LOG</div>
+        <div id="alert-list">
+            <!-- Alerts pop up here -->
+        </div>
+    </section>
+
+    <script>
+        // 1. Simulate Bounding Boxes
+        const bboxContainer = document.getElementById('bbox-container');
+        const labels = ['HUMAN', 'WEAPON', 'UNIDENTIFIED', 'LOITERING'];
+        
+        function updateBoxes() {
+            bboxContainer.innerHTML = '';
+            const numBoxes = Math.floor(Math.random() * 3);
+            
+            for(let i=0; i<numBoxes; i++) {
+                const box = document.createElement('div');
+                box.className = 'bbox';
+                const width = 100 + Math.random() * 100;
+                const height = 150 + Math.random() * 150;
+                const top = 20 + Math.random() * 40;
+                const left = 20 + Math.random() * 60;
+                
+                box.style.width = `${width}px`;
+                box.style.height = `${height}px`;
+                box.style.top = `${top}%`;
+                box.style.left = `${left}%`;
+                
+                const label = labels[Math.floor(Math.random() * labels.length)];
+                const conf = (0.75 + Math.random() * 0.24).toFixed(2);
+                box.setAttribute('data-label', `${label} ${conf}%`);
+                
+                if(label === 'WEAPON') box.style.borderColor = 'var(--neon-yellow)';
+                
+                bboxContainer.appendChild(box);
+            }
+        }
+
+        setInterval(updateBoxes, 3000);
+        updateBoxes();
+
+        // 2. Forensic Slider Logic
+        const slider = document.getElementById('slider');
+        const afterImg = document.getElementById('after-img');
+
+        slider.addEventListener('mousemove', (e) => {
+            const rect = slider.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const percent = (x / rect.width) * 100;
+            afterImg.style.width = `${percent}%`;
+        });
+
+        // 3. Alert System Simulation
+        const alertList = document.getElementById('alert-list');
+        const threatTypes = [
+            { type: 'CRITICAL', msg: 'Weapon detected in Sector B', class: 'critical' },
+            { type: 'WARNING', msg: 'Unauthorized entry detected', class: 'warning' },
+            { type: 'INFO', msg: 'Object identification: Person', class: 'info' }
+        ];
+
+        function addAlert() {
+            const threat = threatTypes[Math.floor(Math.random() * threatTypes.length)];
+            const time = new Date().toLocaleTimeString();
+            
+            const alertHtml = `
+                <div class="alert-item ${threat.class}">
+                    <span class="threat-level">${threat.type}</span>
+                    <span>${threat.msg}</span>
+                    <div style="font-size: 0.6rem; color: #555; margin-top: 5px;">${time}</div>
+                </div>
+            `;
+            
+            alertList.insertAdjacentHTML('afterbegin', alertHtml);
+            
+            if(alertList.children.length > 10) {
+                alertList.removeChild(alertList.lastChild);
+            }
+        }
+
+        setInterval(addAlert, 5000);
+        addAlert();
+    </script>
+</body>
+</html>
