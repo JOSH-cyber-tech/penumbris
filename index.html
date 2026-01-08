@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PENUMBRIS | Noxis + Obscura LIVE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@300;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-black: #050505;
+            --panel-bg: #0d0d0d;
+            --neon-red: #ff003c;
+            --neon-cyan: #00f3ff;
+            --neon-yellow: #f3ff00;
+            --text-gray: #a0a0a0;
+            --border-glow: 0 0 10px rgba(255, 0, 60, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-black);
+            color: white;
+            font-family: 'JetBrains Mono', monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            grid-template-rows: 60px 1fr 180px;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 100;
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--neon-cyan);
+            padding: 0 20px;
+            background: var(--panel-bg);
+            box-shadow: var(--border-glow);
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            letter-spacing: 4px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff003c;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #00ff00;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        aside {
+            grid-row: 2 / 4;
+            background: var(--panel-bg);
+            border: 1px solid #333;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .module-card {
+            border-left: 3px solid var(--neon-cyan);
+            padding: 10px;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .module-card h3 { 
+            font-size: 0.9rem; 
+            margin-bottom: 5px; 
+            color: var(--neon-cyan); 
+        }
+
+        .module-card p { 
+            font-size: 0.7rem; 
+            color: var(--text-gray); 
+        }
+
+        .module-card .stat {
+            color: var(--neon-yellow);
+            font-weight: bold;
+        }
+
+        .main-viewport {
+            position: relative;
+            background: #000;
+            border: 1px solid #444;
+            overflow: hidden;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #videoCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .viewport-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: var(--neon-red);
+            font-size: 12px;
+            font-weight: bold;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-left: 3px solid var(--neon-red);
+        }
+
+        .fps-counter {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: var(--neon-cyan);
+            font-size: 11px;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+        }
+
+        .forensic-panel {
+            grid-row: 3;
+            grid-column: 2;
+            background: var(--panel-bg);
+            border: 1px solid #333;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .forensic-header {
+            padding: 10px 20px;
+            font-size: 10px;
+            color: var(--neon-cyan);
+            border-bottom: 1px solid #333;
+        }
+
+        .comparison-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .comparison-view {
+            position: relative;
+            border: 1px solid #333;
+            overflow: hidden;
+        }
+
+        .comparison-view canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .comparison-label {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            font-size: 9px;
+            background: rgba(0,0,0,0.8);
+            padding: 3px 8px;
+            color: var(--neon-cyan);
+        }
+
+        .alerts-panel {
+            grid-row: 2 / 4;
+            background: var(--panel-bg);
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .alert-header {
+            padding: 15px;
+            border-bottom: 1px solid #333;
+            font-family: 'Orbitron';
+            color: var(--neon-red);
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #alert-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .alert-item {
+            padding: 10px;
+            border-bottom: 1px solid #222;
+            font-size: 0.75rem;
+            animation: slideIn 0.3s ease-out;
+            margin-bottom: 5px;
+        }
+
+        .alert-item.CRITICAL { 
+            border-left: 3px solid var(--neon-red); 
+            background: rgba(255,0,60,0.05); 
+        }
+
+        .alert-item.WARNING { 
+            border-left: 3px solid var(--neon-yellow); 
+            background: rgba(243,255,0,0.03);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .threat-level {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+
+        .loading-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: var(--neon-cyan);
+        }
+
+        .spinner {
+            border: 3px solid #333;
+            border-top: 3px solid var(--neon-cyan);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">PENUMBRIS</div>
+        <div class="connection-status">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">CONNECTING...</span>
+        </div>
+        <div style="font-size: 0.8rem;">
+            LATENCY: <span id="latency">--</span>ms | 
+            FPS: <span id="fps">--</span>
+        </div>
+    </header>
+
+    <aside>
+        <div class="module-card">
+            <h3>NOXIS ENGINE</h3>
+            <p>Real-time threat detection active.</p>
+            <p class="stat">Detections: <span id="detectionCount">0</span></p>
+        </div>
+        <div class="module-card">
+            <h3>OBSCURA-X</h3>
+            <p>Low-light reconstruction enabled.</p>
+            <p class="stat">Enhancement: CLAHE+LAB</p>
+        </div>
+        <div class="module-card">
+            <h3>LIVE FEED</h3>
+            <p>WebSocket streaming active.</p>
+            <p class="stat">Frames: <span id="frameCount">0</span></p>
+        </div>
+        <div style="margin-top: auto; font-size: 0.6rem; color: #555;">
+            &copy; 2024 PENUMBRIS AI SYSTEMS<br>
+            SECURE ACCESS ONLY
+        </div>
+    </aside>
+
+    <section class="main-viewport">
+        <div class="canvas-container">
+            <canvas id="videoCanvas"></canvas>
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="spinner"></div>
+                <div>Initializing PENUMBRIS...</div>
+            </div>
+        </div>
+        <div class="viewport-overlay">
+            ● LIVE FEED // CAM_04_NORTH
+        </div>
+        <div class="fps-counter">
+            Frame ID: <span id="frameId">0</span>
+        </div>
+    </section>
+
+    <section class="forensic-panel">
+        <div class="forensic-header">OBSCURA FORENSIC RECONSTRUCTION (LIVE COMPARISON)</div>
+        <div class="comparison-container">
+            <div class="comparison-view">
+                <canvas id="originalCanvas"></canvas>
+                <div class="comparison-label">RAW FOOTAGE</div>
+            </div>
+            <div class="comparison-view">
+                <canvas id="enhancedCanvas"></canvas>
+                <div class="comparison-label">ENHANCED</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="alerts-panel">
+        <div class="alert-header">
+            <span>THREAT DETECTION LOG</span>
+            <span style="font-size: 0.7rem; color: var(--text-gray);">
+                Alerts: <span id="alertCount">0</span>
+            </span>
+        </div>
+        <div id="alert-list"></div>
+    </section>
+
+    <script>
+        // ============================================================================
+        // CONFIGURATION
+        // ============================================================================
+        const WS_URL = 'ws://localhost:8000/ws';
+        const RECONNECT_DELAY = 2000;
+        const FPS_SMOOTHING = 0.9;
+
+        // ============================================================================
+        // GLOBAL STATE
+        // ============================================================================
+        let ws = null;
+        let reconnectTimeout = null;
+        let isConnected = false;
+        let frameCount = 0;
+        let detectionCount = 0;
+        let alertCount = 0;
+        let lastFrameTime = Date.now();
+        let currentFps = 0;
+        let latency = 0;
+
+        // Canvas contexts
+        const videoCanvas = document.getElementById('videoCanvas');
+        const originalCanvas = document.getElementById('originalCanvas');
+        const enhancedCanvas = document.getElementById('enhancedCanvas');
+        const videoCtx = videoCanvas.getContext('2d');
+        const originalCtx = originalCanvas.getContext('2d');
+        const enhancedCtx = enhancedCanvas.getContext('2d');
+
+        // UI elements
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const latencySpan = document.getElementById('latency');
+        const fpsSpan = document.getElementById('fps');
+        const frameIdSpan = document.getElementById('frameId');
+        const frameCountSpan = document.getElementById('frameCount');
+        const detectionCountSpan = document.getElementById('detectionCount');
+        const alertCountSpan = document.getElementById('alertCount');
+        const alertList = document.getElementById('alert-list');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        // ============================================================================
+        // WEBSOCKET CONNECTION
+        // ============================================================================
+        function connect() {
+            console.log('🔌 Connecting to PENUMBRIS backend...');
+            
+            ws = new WebSocket(WS_URL);
+
+            ws.onopen = () => {
+                console.log('✅ Connected to PENUMBRIS');
+                isConnected = true;
+                updateConnectionStatus(true);
+                loadingOverlay.style.display = 'none';
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleFrame(data);
+                } catch (error) {
+                    console.error('❌ Failed to parse message:', error);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('🔴 WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('⚫ Disconnected from PENUMBRIS');
+                isConnected = false;
+                updateConnectionStatus(false);
+                loadingOverlay.style.display = 'flex';
+                
+                // Attempt reconnection
+                reconnectTimeout = setTimeout(connect, RECONNECT_DELAY);
+            };
+        }
+
+        function updateConnectionStatus(connected) {
+            if (connected) {
+                statusDot.classList.add('connected');
+                statusText.textContent = 'SYSTEM ACTIVE';
+                statusText.style.color = '#00ff00';
+            } else {
+                statusDot.classList.remove('connected');
+                statusText.textContent = 'RECONNECTING...';
+                statusText.style.color = '#ff003c';
+            }
+        }
+
+        // ============================================================================
+        // FRAME PROCESSING
+        // ============================================================================
+        function handleFrame(data) {
+            const now = Date.now();
+            
+            // Calculate FPS
+            const deltaTime = (now - lastFrameTime) / 1000;
+            const instantFps = 1 / deltaTime;
+            currentFps = FPS_SMOOTHING * currentFps + (1 - FPS_SMOOTHING) * instantFps;
+            lastFrameTime = now;
+            
+            // Calculate latency
+            latency = Math.round(now - (data.timestamp * 1000));
+            
+            // Update counters
+            frameCount = data.frame_id;
+            detectionCount += data.detections.length;
+            
+            // Update UI stats
+            updateStats();
+            
+            // Render frames
+            renderVideoFrame(data.original_frame, data.detections);
+            renderComparisonFrames(data.original_frame, data.enhanced_frame);
+            
+            // Handle alerts
+            if (data.alert) {
+                addAlert(data.alert);
+            }
+        }
+
+        function updateStats() {
+            latencySpan.textContent = latency;
+            fpsSpan.textContent = Math.round(currentFps);
+            frameIdSpan.textContent = frameCount;
+            frameCountSpan.textContent = frameCount;
+            detectionCountSpan.textContent = detectionCount;
+            alertCountSpan.textContent = alertCount;
+        }
+
+        // ============================================================================
+        // RENDERING
+        // ============================================================================
+        function renderVideoFrame(base64Frame, detections) {
+            const img = new Image();
+            img.onload = () => {
+                // Resize canvas to match image
+                videoCanvas.width = img.width;
+                videoCanvas.height = img.height;
+                
+                // Draw base image
+                videoCtx.drawImage(img, 0, 0);
+                
+                // Draw detections
+                drawDetections(videoCtx, detections, img.width, img.height);
+            };
+            img.src = 'data:image/jpeg;base64,' + base64Frame;
+        }
+
+        function renderComparisonFrames(originalBase64, enhancedBase64) {
+            // Original
+            const origImg = new Image();
+            origImg.onload = () => {
+                originalCanvas.width = origImg.width;
+                originalCanvas.height = origImg.height;
+                originalCtx.drawImage(origImg, 0, 0);
+            };
+            origImg.src = 'data:image/jpeg;base64,' + originalBase64;
+            
+            // Enhanced
+            const enhImg = new Image();
+            enhImg.onload = () => {
+                enhancedCanvas.width = enhImg.width;
+                enhancedCanvas.height = enhImg.height;
+                enhancedCtx.drawImage(enhImg, 0, 0);
+            };
+            enhImg.src = 'data:image/jpeg;base64,' + enhancedBase64;
+        }
+
+        function drawDetections(ctx, detections, canvasWidth, canvasHeight) {
+            detections.forEach(det => {
+                const { x1, y1, x2, y2, confidence, class_name, threat_level } = det;
+                
+                // Determine color based on threat level
+                let color;
+                if (threat_level > 0.7) {
+                    color = '#ff003c'; // Red
+                } else if (threat_level > 0.4) {
+                    color = '#f3ff00'; // Yellow
+                } else {
+                    color = '#00f3ff'; // Cyan
+                }
+                
+                // Draw bounding box
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                
+                // Draw label background
+                const label = `${class_name.toUpperCase()} ${Math.round(confidence * 100)}%`;
+                ctx.font = '12px JetBrains Mono';
+                const textWidth = ctx.measureText(label).width;
+                
+                ctx.fillStyle = color;
+                ctx.fillRect(x1, y1 - 20, textWidth + 10, 20);
+                
+                // Draw label text
+                ctx.fillStyle = '#000';
+                ctx.fillText(label, x1 + 5, y1 - 5);
+                
+                // Draw threat indicator if high
+                if (threat_level > 0.5) {
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(x1 + 10, y1 + 10, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+        }
+
+        // ============================================================================
+        // ALERT SYSTEM
+        // ============================================================================
+        function addAlert(alert) {
+            alertCount++;
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert-item ${alert.type}`;
+            alertDiv.innerHTML = `
+                <span class="threat-level">${alert.type}</span>
+                <span>${alert.message}</span>
+                <div style="font-size: 0.6rem; color: #555; margin-top: 5px;">
+                    ${alert.timestamp} | Threat: ${Math.round(alert.threat_level * 100)}%
+                </div>
+            `;
+            
+            // Add to top of list
+            alertList.insertBefore(alertDiv, alertList.firstChild);
+            
+            // Remove old alerts (keep max 15)
+            while (alertList.children.length > 15) {
+                alertList.removeChild(alertList.lastChild);
+            }
+            
+            // Play alert sound (optional)
+            if (alert.type === 'CRITICAL') {
+                playAlertSound();
+            }
+        }
+
+        function playAlertSound() {
+            // Create simple beep using Web Audio API
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.2);
+            } catch (e) {
+                console.log('Audio not available');
+            }
+        }
+
+        // ============================================================================
+        // INITIALIZATION
+        // ============================================================================
+        window.addEventListener('load', () => {
+            console.log('🚀 PENUMBRIS Frontend initialized');
+            connect();
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (ws) {
+                ws.close();
+            }
+            if (reconnectTimeout) {
+                clearTimeout(reconnectTimeout);
+            }
+        });
+    </script>
+</body>
+</html>
